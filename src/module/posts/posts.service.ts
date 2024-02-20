@@ -1,21 +1,46 @@
+import { Repository } from 'typeorm';
 import CreatePostDto from './dto/createPosts.dto';
 import { UpdatePostDto } from './dto/updatePost.dto';
+import Post from 'src/entity/post.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 export default class PostsService {
+  constructor(
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
+  ) {}
   getAllPosts() {
-    return [1];
+    return this.postRepository.find();
   }
 
-  getPost(id: number) {
-    return id;
+  async getPost(id: number) {
+    const post = await this.postRepository.findOne({
+      where: {
+        id,
+      },
+    });
+    if (post) {
+      return post;
+    }
+    throw new HttpException('Post not found', HttpStatus.NOT_FOUND);
   }
 
-  createPost(post: CreatePostDto) {
-    return post;
+  async createPost(post: CreatePostDto) {
+    const newPost = this.postRepository.create(post);
+    await this.postRepository.save(newPost);
+    return newPost;
   }
 
-  updatePost(id: number, post: UpdatePostDto) {
-    return post;
+  async updatePost(id: number, post: UpdatePostDto) {
+    await this.postRepository.update(id, post);
+    const updatePost = await this.postRepository.findOne({
+      where: { id },
+    });
+    if (updatePost) {
+      return updatePost;
+    }
+    throw new HttpException('post not found', HttpStatus.NOT_FOUND);
   }
 
   deletePost(id: number) {
